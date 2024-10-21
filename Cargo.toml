@@ -1,0 +1,7 @@
+[package]
+name = "crystal_nova"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alyx Satchell alyxsatchell@gmail.com"]
+
+[dependencies]
