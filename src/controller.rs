@@ -16,14 +16,14 @@ enum Command {
     LeftRotate
 }
 
-struct InputController{
+pub struct InputController{
     // maybe a key binding map
     commands: Vec<Command>,
     speed: f32,
 }
 
 impl InputController {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { commands: Vec::new(), speed: 0.1}
     }
 
