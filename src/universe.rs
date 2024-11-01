@@ -1,3 +1,5 @@
+use std::iter;
+
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
@@ -7,6 +9,7 @@ use winit::{
 };
 
 use crate::controller::InputController;
+use crate::object::{Object, Placement};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -33,19 +36,6 @@ impl Vertex {
                 },
             ],
         }
-    }
-}
-
-struct Placement {
-    x: f32,
-    y: f32,
-    z: f32,
-    // eventually rotation things
-}
-
-impl Placement {
-    fn placement_vector(&self) -> [f32; 3]{
-        [self.x, self.y, self.z]
     }
 }
 
@@ -76,7 +66,7 @@ struct Universe<'a> {
     // vertex_buffer: wgpu::Buffer,
     // index_buffer: wgpu::Buffer,
     input_controller: InputController,
-    placement: Placement,
+    player: Box<dyn Object>,
     placement_uniform: PlacementUniform,
     placement_buffer: wgpu::Buffer,
     placement_bind_group: wgpu::BindGroup,
@@ -84,7 +74,7 @@ struct Universe<'a> {
 }
 
 impl<'a> Universe<'a> {
-    async fn new(window: &'a Window) -> Universe<'a>{
+    async fn new(window: &'a Window, player: Box<dyn Object>) -> Universe<'a>{
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor{
             backends: wgpu::Backends::PRIMARY,
@@ -117,10 +107,9 @@ impl<'a> Universe<'a> {
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
-        let placement = Placement{ x: 0., y: 0., z: 0. };
         let input_controller = InputController::new();
         let mut placement_uniform = PlacementUniform::new();
-        placement_uniform.update(&placement);
+        placement_uniform.update(player.placement());
         let placement_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Placement Buffer"),
             contents: bytemuck::cast_slice(&[placement_uniform]),
@@ -203,11 +192,72 @@ impl<'a> Universe<'a> {
             size,
             render_pipeline,
             input_controller,
-            placement,
+            player,
             placement_uniform,
             placement_buffer,
             placement_bind_group,
             window,
         }
     }
+
+    fn input(&mut self, event: &WindowEvent) -> bool {
+        self.input_controller.process(event)
+    }
+
+    fn update(&mut self) {
+        self.input_controller.update(&mut *self.player);
+        self.placement_uniform.update(self.player.placement());
+        self.queue.write_buffer(
+            &self.placement_buffer,
+            0,
+            bytemuck::cast_slice(&[self.placement_uniform])
+        );
+    }
+
+    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        let output = self.surface.get_current_texture()?;
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
+
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.,
+                            g: 0.,
+                            b: 0.,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
+
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.placement_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.player.vertex_buffer());
+            render_pass.set_index_buffer(self.player.index_buffer(), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.player.num_indices(), 0, 0..1);
+        }
+
+        self.queue.submit(iter::once(encoder.finish()));
+        output.present();
+
+        Ok(())
+    }
+
 }

@@ -27,7 +27,7 @@ impl InputController {
         Self { commands: Vec::new(), speed: 0.1}
     }
 
-    fn process(&mut self, event: &WindowEvent) -> bool {
+    pub fn process(&mut self, event: &WindowEvent) -> bool {
 
         match event {
             WindowEvent::KeyboardInput {
@@ -64,7 +64,7 @@ impl InputController {
         }
     }
 
-    fn update(&self, object: &mut dyn Object) {
+    pub fn update(&self, object: &mut dyn Object) {
         for command in &self.commands{
             match command{
                 Command::Up => {
