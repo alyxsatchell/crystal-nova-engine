@@ -13,7 +13,7 @@ use crate::object::{Object, Placement};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
+pub struct Vertex {
     position: [f32; 3],
 }
 
@@ -56,7 +56,7 @@ impl PlacementUniform {
     }
 }
 
-struct Universe<'a> {
+pub struct Universe<'a> {
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
     queue: wgpu::Queue,

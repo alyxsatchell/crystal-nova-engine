@@ -4,7 +4,7 @@ use winit::{
 };
 
 use crate::object::Object;
-enum Command {
+pub enum Command {
     Up,
     Down,
     Left,
