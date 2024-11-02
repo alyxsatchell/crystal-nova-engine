@@ -1,11 +1,11 @@
 use std::iter;
 
 use wgpu::util::DeviceExt;
+use winit::event_loop::EventLoop;
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::{
     event::*,
-    event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowBuilder},
+    window::Window,
 };
 
 use crate::controller::InputController;
@@ -258,6 +258,59 @@ impl<'a> Universe<'a> {
         output.present();
 
         Ok(())
+    }
+
+    pub async fn run(&mut self){
+        env_logger::init();
+        let event_loop = EventLoop::new().unwrap();
+        let mut surface_configured = false;
+        event_loop
+            .run(move |event, control_flow| {
+                match event {
+                    Event::WindowEvent {
+                        ref event,
+                        window_id,
+                    } if window_id == self.window.id() => {
+                        if !self.input(event) {
+                            match event {
+                                WindowEvent::CloseRequested
+                                | WindowEvent::KeyboardInput {
+                                    event:
+                                        KeyEvent {
+                                            state: ElementState::Pressed,
+                                            physical_key: PhysicalKey::Code(KeyCode::Escape),
+                                            ..
+                                        },
+                                    ..
+                                } => control_flow.exit(),
+                                WindowEvent::RedrawRequested => {
+                                    self.window.request_redraw();
+                                    if !surface_configured {
+                                        return;
+                                    }
+                                    self.update();
+                                    match self.render() {
+                                        Ok(_) => {}
+                                        Err(
+                                            wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated,
+                                        ) => (),
+                                        Err(wgpu::SurfaceError::OutOfMemory) => {
+                                            log::error!("OutOfMemory");
+                                            control_flow.exit();
+                                        }
+                                        Err(wgpu::SurfaceError::Timeout) => {
+                                            log::warn!("Surface timeout")
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            })
+            .unwrap();
     }
 
 }

@@ -1,9 +1,6 @@
-use wgpu::util::DeviceExt;
 use winit::{
     event::*,
-    event_loop::EventLoop,
     keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowBuilder},
 };
 
 use crate::object::Object;
