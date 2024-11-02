@@ -1,7 +1,7 @@
 use std::iter;
 
 use wgpu::util::DeviceExt;
-use winit::event_loop::EventLoop;
+use winit::event_loop::{self, EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::{
     event::*,
@@ -14,7 +14,7 @@ use crate::object::{Object, Placement};
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    position: [f32; 3],
+    pub position: [f32; 3],
 }
 
 impl Vertex {
@@ -74,7 +74,7 @@ pub struct Universe<'a> {
 }
 
 impl<'a> Universe<'a> {
-    async fn new(window: &'a Window, player: Box<dyn Object>) -> Universe<'a>{
+    pub async fn new(window: &'a Window, player: Box<dyn Object>) -> Universe<'a>{
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor{
             backends: wgpu::Backends::PRIMARY,
@@ -184,6 +184,7 @@ impl<'a> Universe<'a> {
             multiview: None,
             cache: None,
         });
+
         return Universe{
             surface,
             device,
@@ -249,8 +250,8 @@ impl<'a> Universe<'a> {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.placement_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.player.vertex_buffer());
-            render_pass.set_index_buffer(self.player.index_buffer(), wgpu::IndexFormat::Uint16);
+            render_pass.set_vertex_buffer(0, self.player.vertex_buffer().unwrap().slice(..));
+            render_pass.set_index_buffer(self.player.index_buffer().unwrap().slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..self.player.num_indices(), 0, 0..1);
         }
 
@@ -260,9 +261,8 @@ impl<'a> Universe<'a> {
         Ok(())
     }
 
-    pub async fn run(&mut self){
+    pub async fn run(&mut self, event_loop: EventLoop<()>){
         env_logger::init();
-        let event_loop = EventLoop::new().unwrap();
         let mut surface_configured = false;
         event_loop
             .run(move |event, control_flow| {

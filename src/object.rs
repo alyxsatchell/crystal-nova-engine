@@ -1,13 +1,17 @@
 use wgpu::BufferSlice;
 
+use crate::universe::Vertex;
+
 pub trait Object {
-    fn Up(&self);
-    fn Down(&self);
-    fn Left(&self);
-    fn Right(&self);
+    fn Up(&mut self);
+    fn Down(&mut self);
+    fn Left(&mut self);
+    fn Right(&mut self);
     fn placement(&self) -> &Placement;
-    fn vertex_buffer(&self) -> BufferSlice<'_>;
-    fn index_buffer(&self) -> BufferSlice<'_>;
+    fn vertex_buffer(&self) -> Option<&wgpu::Buffer>;
+    fn index_buffer(&self) -> Option<&wgpu::Buffer>;
+    // fn vertex_buffer(&self) -> &BufferSlice<'_>;
+    // fn index_buffer(&self) -> &BufferSlice<'_>;
     fn num_indices(&self) -> u32;
 }
 
