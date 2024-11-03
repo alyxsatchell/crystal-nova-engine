@@ -1,6 +1,4 @@
-use wgpu::BufferSlice;
-
-use crate::universe::Vertex;
+use wgpu::Device;
 
 pub trait Object {
     fn Up(&mut self);
@@ -13,6 +11,7 @@ pub trait Object {
     // fn vertex_buffer(&self) -> &BufferSlice<'_>;
     // fn index_buffer(&self) -> &BufferSlice<'_>;
     fn num_indices(&self) -> u32;
+    fn init(&mut self, device: &wgpu::Device);
 }
 
 pub struct Placement {
@@ -23,7 +22,7 @@ pub struct Placement {
 }
 
 impl Placement {
-    pub fn placement_vector(&self) -> [f32; 3]{
-        [self.x, self.y, self.z]
+    pub fn placement_vector(&self) -> [f32; 4]{
+        [self.x, self.y, self.z, 0.]
     }
 }

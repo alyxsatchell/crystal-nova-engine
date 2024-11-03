@@ -61,7 +61,7 @@ impl InputController {
         }
     }
 
-    pub fn update(&self, object: &mut dyn Object) {
+    pub fn update(&mut self, object: &mut dyn Object) {
         for command in &self.commands{
             match command{
                 Command::Up => {
@@ -84,6 +84,7 @@ impl InputController {
                 },
             }
         }
+        self.commands.clear();
     }
 
 }

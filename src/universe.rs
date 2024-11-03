@@ -1,7 +1,7 @@
 use std::iter;
 
 use wgpu::util::DeviceExt;
-use winit::event_loop::{self, EventLoop};
+use winit::event_loop::{EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::{
     event::*,
@@ -42,12 +42,12 @@ impl Vertex {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct PlacementUniform {
-    location: [f32; 3], // might need to be 4
+    location: [f32; 4], // might need to be 4
 }
 
 impl PlacementUniform {
     fn new() -> Self{
-        Self {location: [0., 0., 0.]}
+        Self {location: [0., 0., 0., 0.]}
     }
 
     fn update(&mut self, placement: &Placement){
@@ -58,7 +58,7 @@ impl PlacementUniform {
 
 pub struct Universe<'a> {
     surface: wgpu::Surface<'a>,
-    device: wgpu::Device,
+    pub device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
@@ -74,7 +74,7 @@ pub struct Universe<'a> {
 }
 
 impl<'a> Universe<'a> {
-    pub async fn new(window: &'a Window, player: Box<dyn Object>) -> Universe<'a>{
+    pub async fn new(window: &'a Window, mut player: Box<dyn Object>) -> Universe<'a>{
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor{
             backends: wgpu::Backends::PRIMARY,
@@ -185,6 +185,8 @@ impl<'a> Universe<'a> {
             cache: None,
         });
 
+        player.init(&device);
+
         return Universe{
             surface,
             device,
@@ -235,9 +237,9 @@ impl<'a> Universe<'a> {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.,
-                            g: 0.,
-                            b: 0.,
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
@@ -263,7 +265,8 @@ impl<'a> Universe<'a> {
 
     pub async fn run(&mut self, event_loop: EventLoop<()>){
         env_logger::init();
-        let mut surface_configured = false;
+        self.surface.configure(&self.device, &self.config);
+        let surface_configured = true;
         event_loop
             .run(move |event, control_flow| {
                 match event {
@@ -286,9 +289,11 @@ impl<'a> Universe<'a> {
                                 WindowEvent::RedrawRequested => {
                                     self.window.request_redraw();
                                     if !surface_configured {
+                                        println!("surface not configured");
                                         return;
                                     }
                                     self.update();
+                                    println!("testing2");
                                     match self.render() {
                                         Ok(_) => {}
                                         Err(

@@ -1,5 +1,5 @@
 struct PlacementUniform {
-    location: vec3<f32>,
+    location: vec4<f32>,
 }
 @group(0) @binding(0)
 var<uniform> placement: PlacementUniform;
@@ -18,7 +18,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.clip_position = vec4<f32>(placement.location + model.position, 1.0);
+    out.clip_position = placement.location + vec4<f32>(model.position, 1.0);
     return out;
 }
 
