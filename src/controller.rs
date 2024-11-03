@@ -1,9 +1,13 @@
+use std::collections::HashMap;
+
 use winit::{
     event::*,
     keyboard::{KeyCode, PhysicalKey},
 };
 
 use crate::object::Object;
+
+#[derive(Debug,PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Command {
     Up,
     Down,
@@ -15,17 +19,30 @@ pub enum Command {
 
 pub struct InputController{
     // maybe a key binding map
-    commands: Vec<Command>,
+    commands: HashMap<Command, bool>,
+    key_binds: HashMap<KeyCode, Command>,
     speed: f32,
 }
 
 impl InputController {
     pub fn new() -> Self {
-        Self { commands: Vec::new(), speed: 0.1}
+        let commands_list = [Command::Up, Command::Down, Command::Left, Command::Right];
+        let input_list = [KeyCode::KeyW, KeyCode::KeyS, KeyCode::KeyA, KeyCode::KeyD];
+        let mut commands = HashMap::new();
+        for command in commands_list{
+            commands.insert(command, false);
+        }
+        let mut key_binds = HashMap::new();
+        let mut i = 0;
+        for input in input_list{
+            key_binds.insert(input, commands_list[i as usize]);
+            i += 1;
+        }
+        Self { commands, key_binds, speed: 0.001}
     }
 
     pub fn process(&mut self, event: &WindowEvent) -> bool {
-
+        let mut return_val = false;
         match event {
             WindowEvent::KeyboardInput {
                 event:
@@ -37,54 +54,50 @@ impl InputController {
                 ..
             } => {
                 let is_pressed = *state == ElementState::Pressed;
-                match keycode {
-                    KeyCode::KeyW | KeyCode::ArrowUp => {
-                        self.commands.push(Command::Up);
-                        true
-                    }
-                    KeyCode::KeyA | KeyCode::ArrowLeft => {
-                        self.commands.push(Command::Left);
-                        true
-                    }
-                    KeyCode::KeyS | KeyCode::ArrowDown => {
-                        self.commands.push(Command::Down);
-                        true
-                    }
-                    KeyCode::KeyD | KeyCode::ArrowRight => {
-                        self.commands.push(Command::Right);
-                        true
-                    }
-                    _ => false,
+                return_val = is_pressed;
+                println!("{:?}", keycode);
+                let command_code = self.key_binds.get(keycode);
+                match command_code{
+                    Some(command) => {self.commands.insert(*command, is_pressed);},
+                    None => (),
                 }
-            }
-            _ => false,
+                }
+            _ => ()
         }
+        return return_val;
     }
 
     pub fn update(&mut self, object: &mut dyn Object) {
-        for command in &self.commands{
-            match command{
-                Command::Up => {
-                    object.Up();
-                },
-                Command::Down => {
-                    object.Down();
-                },
-                Command::Left => {
-                    object.Left();
-                },
-                Command::Right => {
-                    object.Right();
-                },
-                Command::RightRotate => {
-                    todo!()
-                },
-                Command::LeftRotate => {
-                    todo!()
-                },
+        let length = self.commands.len();
+        if !(length == 0)
+        {
+            println!("{}", self.commands.len());
+        }
+        for key in &self.commands{
+            if *key.1{
+                let command = key.0;
+                match command{
+                    Command::Up => {
+                        object.Up();
+                    },
+                    Command::Down => {
+                        object.Down();
+                    },
+                    Command::Left => {
+                        object.Left();
+                    },
+                    Command::Right => {
+                        object.Right();
+                    },
+                    Command::RightRotate => {
+                        todo!()
+                    },
+                    Command::LeftRotate => {
+                        todo!()
+                    },
+                }
             }
         }
-        self.commands.clear();
     }
 
 }

@@ -293,7 +293,6 @@ impl<'a> Universe<'a> {
                                         return;
                                     }
                                     self.update();
-                                    println!("testing2");
                                     match self.render() {
                                         Ok(_) => {}
                                         Err(
