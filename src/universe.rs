@@ -43,11 +43,12 @@ impl Vertex {
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct PlacementUniform {
     location: [f32; 4], // might need to be 4
+    color: [f32; 4],
 }
 
 impl PlacementUniform {
     fn new() -> Self{
-        Self {location: [0., 0., 0., 0.]}
+        Self {location: [0., 0., 0., 0.], color: [0., 0.5, 0.5, 1.0]}
     }
 
     fn update(&mut self, placement: &Placement){
