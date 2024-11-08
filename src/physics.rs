@@ -1,7 +1,14 @@
 use std::ops::{AddAssign, MulAssign, SubAssign};
 
 pub struct Physics{
+    mass: f32,
+    kinetics: Kinetics,
+}
 
+impl Physics{
+    pub fn new(mass: f32) -> Self {
+        Self { mass, kinetics: Kinetics::new(mass) }
+    }
 }
 
 pub struct Kinetics {

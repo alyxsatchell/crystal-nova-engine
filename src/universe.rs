@@ -1,6 +1,7 @@
 use std::iter;
 
 use wgpu::util::DeviceExt;
+use winit::dpi::PhysicalSize;
 use winit::event_loop::{EventLoop};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::{
@@ -36,6 +37,33 @@ impl Vertex {
                 },
             ],
         }
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct WindowSizeUniform {
+    x: u32,
+    y: u32
+}
+
+impl WindowSizeUniform {
+    fn new(size: PhysicalSize<u32>) -> Self{
+        Self {x: size.width, y:size.height}
+    }
+
+    fn update(&mut self, size: PhysicalSize<u32>){
+        self.x = size.width;
+        self.y = size.height;
+    }
+
+    fn get_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer{
+        let size_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Placement Buffer"),
+            contents: bytemuck::cast_slice(&[self.x, self.y]),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+        return size_buffer
     }
 }
 
@@ -77,6 +105,7 @@ pub struct Universe<'a> {
 impl<'a> Universe<'a> {
     pub async fn new(window: &'a Window, mut player: Box<dyn Object>) -> Universe<'a>{
         let size = window.inner_size();
+        let window_size = WindowSizeUniform::new(size);
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor{
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -116,6 +145,19 @@ impl<'a> Universe<'a> {
             contents: bytemuck::cast_slice(&[placement_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
+        let window_size_buffer = window_size.get_buffer(&device);
+        let window_size_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("window size bind group layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None },
+                count: None,
+            }],
+        });
         let placement_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -128,6 +170,14 @@ impl<'a> Universe<'a> {
                 count: None,
             }],
             label: Some("placement_bind_group_layout"),
+        });
+        let window_size_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("window size bind group"),
+            layout: &window_size_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 1,
+                resource: window_size_buffer.as_entire_binding()
+            }]
         });
         let placement_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &placement_bind_group_layout,

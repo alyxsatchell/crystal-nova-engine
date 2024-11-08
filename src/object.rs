@@ -1,5 +1,7 @@
 use wgpu::Device;
 
+use crate::physics::Physics;
+
 pub trait Object {
     fn Up(&mut self);
     fn Down(&mut self);
@@ -8,10 +10,9 @@ pub trait Object {
     fn placement(&self) -> &Placement;
     fn vertex_buffer(&self) -> Option<&wgpu::Buffer>;
     fn index_buffer(&self) -> Option<&wgpu::Buffer>;
-    // fn vertex_buffer(&self) -> &BufferSlice<'_>;
-    // fn index_buffer(&self) -> &BufferSlice<'_>;
     fn num_indices(&self) -> u32;
     fn init(&mut self, device: &wgpu::Device);
+    fn get_physics(&mut self) -> &mut Physics;
 }
 
 pub struct Placement {

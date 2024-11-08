@@ -5,6 +5,14 @@ struct PlacementUniform {
 @group(0) @binding(0)
 var<uniform> placement: PlacementUniform;
 
+struct WindowSizeUniform {
+    x: u32,
+    y: u32,
+}
+
+@group(0) @binding(1)
+var<uniform> window_size: WindowSizeUniform; // change to a matrix
+
 struct VertexInput {
     @location(0) position: vec3<f32>,
     // rotation eventually maybe
